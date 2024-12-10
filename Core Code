@@ -1,0 +1,114 @@
+import requests
+import json
+
+# Function to greet the user
+def greet_user():
+    print("Hello! I am your AI-powered personal assistant.")
+    user_name = input("What is your name? ")
+    print(f"Nice to meet you, {user_name}!")
+    return user_name
+
+# Function to set reminders
+def set_reminder():
+    reminders = []
+    while True:
+        reminder = input("Enter a reminder (or type 'done' to finish): ")
+        if reminder.lower() == 'done':
+            break
+        reminders.append(reminder)
+    return reminders
+
+# Function to manage a to-do list
+def manage_todo_list():
+    todo_list = []
+    while True:
+        action = input("Enter 'add' to add a task, 'remove' to remove a task, 'view' to view tasks, or 'done' to finish: ").lower()
+        if action == 'add':
+            task = input("Enter the task: ")
+            todo_list.append(task)
+        elif action == 'remove':
+            task = input("Enter the task to remove: ")
+            if task in todo_list:
+                todo_list.remove(task)
+            else:
+                print("Task not found.")
+        elif action == 'view':
+            print("Your to-do list:")
+            for task in todo_list:
+                print(f"- {task}")
+        elif action == 'done':
+            break
+        else:
+            print("Invalid action. Please try again.")
+    return todo_list
+
+# Function to get weather updates using OpenWeatherMap API
+def get_weather_update():
+    api_key = "7dead6465b5ece8cd367bf73b25878db"
+    city = input("Enter the city for the weather update: ")
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            weather = data['weather'][0]['description']
+            temperature = data['main']['temp']
+            print(f"Weather in {city}: {weather}, {temperature}°F")
+        else:
+            print("Error retrieving weather information. Please try again.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Function to get news briefings using NewsAPI
+def get_news_briefing():
+    api_key = "b13c87069be9414a8a078e7b3aec7f18"
+    url = f"https://newsapi.org/v2/top-headlines?country=us&apiKey={api_key}"
+
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            news_data = response.json()
+            print("Today's news briefing:")
+            for i, article in enumerate(news_data['articles'][:5], start=1):
+                print(f"{i}. {article['title']}")
+        else:
+            print("Error retrieving news. Please try again.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Function to parse and execute commands
+def command_parser():
+    print("You can ask me to do the following tasks:")
+    print("1. Set a reminder")
+    print("2. Manage your to-do list")
+    print("3. Get a weather update")
+    print("4. Get a news briefing")
+    print("5. Exit")
+
+    while True:
+        command = input("What would you like me to do? ").lower()
+        if "reminder" in command:
+            reminders = set_reminder()
+            print("Your reminders:")
+            for reminder in reminders:
+                print(f"- {reminder}")
+        elif "to-do" in command or "todo" in command:
+            todo_list = manage_todo_list()
+        elif "weather" in command:
+            get_weather_update()
+        elif "news" in command:
+            get_news_briefing()
+        elif "exit" in command:
+            print("Goodbye!")
+            break
+        else:
+            print("Sorry, I didn't understand that command. Please try again.")
+
+# Main function
+def main():
+    user_name = greet_user()
+    command_parser()
+
+if __name__ == "__main__":
+    main()
