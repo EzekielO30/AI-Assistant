@@ -1,0 +1,6 @@
+Command,Intent
+"Set a reminder to call mom","reminder"
+"What's the weather like today?","weather"
+"Show me the latest news headlines","news"
+"Add 'study Python' to my to-do list","todo"
+"Exit the assistant","exit"
