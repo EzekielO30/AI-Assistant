@@ -1,0 +1,73 @@
+import tensorflow as tf
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+import numpy as np
+import joblib
+
+# Load the dataset
+data = pd.read_csv("commands.csv")
+
+# Preprocess the data
+commands = data["Command"].values
+intents = data["Intent"].values
+
+# Encode labels
+label_encoder = LabelEncoder()
+intents_encoded = label_encoder.fit_transform(intents)
+
+# Tokenize commands
+tokenizer = tf.keras.preprocessing.text.Tokenizer()  # Using Tokenizer utility
+tokenizer.fit_on_texts(commands)
+commands_seq = tokenizer.texts_to_sequences(commands)
+commands_padded = tf.keras.preprocessing.sequence.pad_sequences(commands_seq, padding="post")
+
+# Convert data to TensorFlow tensors
+X = tf.convert_to_tensor(commands_padded, dtype=tf.int32)
+y = tf.convert_to_tensor(intents_encoded, dtype=tf.int32)
+
+# Define the model using TensorFlow core API
+class IntentModel(tf.Module):
+    def __init__(self, vocab_size, embed_dim, num_classes):
+        # Embedding layer
+        self.embedding = tf.Variable(tf.random.normal([vocab_size, embed_dim]), trainable=True)
+        # LSTM layer
+        self.lstm = tf.keras.layers.LSTM(64, return_sequences=False, return_state=False)
+        # Dense layers
+        self.fc1 = tf.Variable(tf.random.normal([64, 32]), trainable=True)
+        self.fc2 = tf.Variable(tf.random.normal([32, num_classes]), trainable=True)
+        self.bias1 = tf.Variable(tf.zeros([32]), trainable=True)
+        self.bias2 = tf.Variable(tf.zeros([num_classes]), trainable=True)
+
+    def __call__(self, x):
+        x = tf.nn.embedding_lookup(self.embedding, x)
+        x = self.lstm(x)
+        x = tf.nn.relu(tf.matmul(x, self.fc1) + self.bias1)
+        logits = tf.matmul(x, self.fc2) + self.bias2
+        return logits
+
+# Initialize the model
+vocab_size = len(tokenizer.word_index) + 1
+embed_dim = 64
+num_classes = len(label_encoder.classes_)
+model = IntentModel(vocab_size, embed_dim, num_classes)
+
+# Define loss and optimizer
+loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
+optimizer = tf.optimizers.Adam()
+
+# Training loop
+epochs = 10
+batch_size = 4
+
+for epoch in range(epochs):
+    print(f"Epoch {epoch + 1}/{epochs}")
+    num_batches = int(np.ceil(len(X) / batch_size))
+    for i in range(0, len(X), batch_size):
+        batch_X = X[i:i + batch_size]
+        batch_y = y[i:i + batch_size]
+        with tf.GradientTape() as tape:
+            logits = model(batch_X)
+            loss = tf.reduce_mean(loss_fn(labels=batch_y, logits=logits))
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    print(f"Loss: {loss.numpy()}")
